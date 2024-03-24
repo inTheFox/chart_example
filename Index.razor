@@ -1,0 +1,169 @@
+﻿@page "/"
+@using StokChart.Blazor.Core.Enums
+@using StokChart.Blazor.Core.Implementations
+@using StokChart.Blazor.Core.Indicators
+@using StokChart.Blazor.Core.Interfaces
+
+<MudContainer MaxWidth="MaxWidth.Large">
+    <MudPaper Elevation="15" Class="mt-2">
+        <MudToolBar>
+            <MudText Typo="Typo.h6">StockChart</MudText>
+            <MudSpacer/>
+            <MudMenu Icon="@Icons.Material.Filled.MoreVert" AnchorOrigin="Origin.BottomCenter">
+            </MudMenu>
+        </MudToolBar>
+        <MudPaper Class="p-1">
+            <MudGrid Spacing="0">
+                <MudItem sm="9">
+                    <MudText>Simple chart. Candles only</MudText>
+                    <StockChart @ref="_stockChart2" />   
+                    
+                    <MudText Class="mt-2">Candles, trades, indicators.</MudText>
+                    <StockChart @ref="_stockChart" />
+                </MudItem>
+                <MudItem sm="3">
+                    <MudNavMenu Rounded="true" Margin="Margin.Dense" Color="Color.Primary" Class="pa-2">
+                        <MudPaper Elevation="5" Class="p-1 mb-1">
+                            <MudCheckBox T="bool" @bind-Value="@_stockChart.CrossHair" Label="CrossHair"></MudCheckBox>
+                        </MudPaper>
+                        <MudPaper Elevation="5" Class="p-1 mb-1">
+                            <MudCheckBox T="bool" @bind-Value="@_stockChart.CrossHairTooltip"  Label="CrossHairTooltip"></MudCheckBox>
+                        </MudPaper>
+                        <MudPaper Elevation="5" Class="p-1 mb-1">
+                            <MudCheckBox T="bool" @bind-Value="@_stockChart.CrossHairAxisLabels" Label="CrossHairAxisLabels"></MudCheckBox>
+                        </MudPaper>
+                        <MudPaper Elevation="5" Class="p-1 mb-1">
+                            <MudCheckBox T="bool" @bind-Value="@_stockChart.IsAutoScroll"  Label="IsAutoScroll"></MudCheckBox>
+                        </MudPaper>
+                        <MudPaper Elevation="5" Class="p-1 mb-1">
+                            <MudCheckBox T="bool" @bind-Value="@_stockChart.IsAutoRange" Label="IsAutoRange"></MudCheckBox>
+                        </MudPaper>
+                        <MudPaper Elevation="5" Class="p-1 mb-1">
+                            <MudCheckBox T="bool" @bind-Value="@_stockChart.ShowLegend" Label="ShowLegend"></MudCheckBox>
+                        </MudPaper>
+                        <MudPaper Elevation="5" Class="p-1 mb-1">
+                            <MudCheckBox T="bool" @bind-Value="@_stockChart.ShowOverview" Label="ShowOverview"></MudCheckBox>
+                        </MudPaper>
+                    </MudNavMenu>
+                </MudItem>
+            </MudGrid>
+
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code
+{
+    #pragma warning disable CS4014
+    private StockChart? _stockChart;
+    private StockChart? _stockChart2;
+
+    private IChartCandleElement? _chartCandlesElement;
+    private IChartCandleElement? _chartCandlesElement2;
+
+    private IChartTradeElement? _chartTradesElem;
+    private IChartOrderElement? _chartOrdersElem;
+
+    private IChartIndicatorElement? _lineIndicatorElement;
+    private IChartIndicatorElement? _lineIndicatorElement2;
+
+    private IChartIndicatorElement? _bubbleIndicator;
+    private IChartIndicatorElement? _histogramIndicator;
+    private IChartIndicatorElement? _hardHistogramIndicator;
+    private IChartIndicatorElement? _stripeIndicator;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        if (_stockChart is null) return;
+        if (_stockChart2 is null) return;
+
+        await _stockChart.InitChartAsync();
+
+        var area = await _stockChart.CreateAreaAsync();
+        await area.AddXAxis(ChartAxisType.CategoryDateTime);
+        await area.AddYAxis(ChartAxisType.Numeric);
+        await area.InitModifers();
+
+        var area2 = await _stockChart.CreateAreaAsync();
+        await area2.AddXAxis(ChartAxisType.CategoryDateTime);
+        await area2.AddYAxis(ChartAxisType.Numeric);
+        await area2.InitModifers();
+
+        await _stockChart2.InitChartAsync();
+        var areaOfChart2 = await _stockChart2.CreateAreaAsync();
+        await areaOfChart2.AddXAxis(ChartAxisType.CategoryDateTime);
+        await areaOfChart2.AddYAxis(ChartAxisType.Numeric);
+        await areaOfChart2.InitModifers();
+
+        _chartCandlesElement = await area.AddCandlesAsync();
+        _chartCandlesElement.UpFillColor = System.Drawing.Color.Blue;
+        _chartCandlesElement.UpBorderColor = System.Drawing.Color.Blue;
+        _chartCandlesElement.DownFillColor = System.Drawing.Color.White;
+        _chartCandlesElement.DownBorderColor = System.Drawing.Color.White;
+
+        _chartCandlesElement2 = await areaOfChart2.AddCandlesAsync();
+        _chartCandlesElement2.UpFillColor = System.Drawing.Color.GreenYellow;
+        _chartCandlesElement2.UpBorderColor = System.Drawing.Color.Green;
+        _chartCandlesElement2.DownFillColor = System.Drawing.Color.IndianRed;
+        _chartCandlesElement2.DownBorderColor = System.Drawing.Color.DarkRed;
+
+
+        _lineIndicatorElement = await area.AddIndicatorAsync(new SimpleLineIndicator("Test", 2));
+        _bubbleIndicator = await area.AddIndicatorAsync(new BubbleIndicator("Bubble test"));
+        _hardHistogramIndicator = await area2.AddIndicatorAsync(new HardHistogramIndicator("Гистограмма (сложн)"));
+
+        Task.Factory.StartNew(async () =>
+        {
+            try
+            {
+                List<double> openValues = new List<double>(PaneTestData.OpenValues.OfType<double>());
+                List<double> highValues = new List<double>(PaneTestData.HighValues.OfType<double>());
+                List<double> lowValues = new List<double>(PaneTestData.LowValues.OfType<double>());
+                List<double> closeValues = new List<double>(PaneTestData.CloseValues.OfType<double>());
+                List<double> volumeValues = new List<double>(PaneTestData.VolumeValues.OfType<double>());
+                Console.WriteLine($"Open: {openValues.Count}, High: {highValues.Count}, Low: {lowValues.Count}, Close: {closeValues.Count}");
+
+                int firstCounter = 0;
+                for (int i = 0; i < openValues.Count; i++)
+                {
+                    var data = _stockChart.CreateData();
+                    var item = data.Group(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000);
+
+                    var dataOfChart2 = _stockChart2.CreateData();
+                    var itemOfChart2 = dataOfChart2.Group(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000);
+
+                    decimal openValue = new decimal(openValues[i]);
+                    decimal highValue = new decimal(highValues[i]);
+                    decimal lowValue = new decimal(lowValues[i]);
+                    decimal closeValue = new decimal(closeValues[i]);
+                    decimal volume = new decimal(volumeValues[i]);
+
+                    // Добавляем свечную серию
+                    item.Add(_chartCandlesElement, new CandleMessage(openValue, highValue, lowValue, closeValue, volume));
+                    itemOfChart2.Add(_chartCandlesElement2, new CandleMessage(openValue, highValue, lowValue, closeValue, volume));
+                    
+                    item.Add(_lineIndicatorElement, openValue, closeValue);
+                    //item.Add(_lineIndicatorElement2, openValue, highValue, lowValue, closeValue);
+
+                    //item.Add(_bubbleIndicator, openValue, Math.Sin(i) * 60 + 3);
+                    item.Add(_hardHistogramIndicator, Math.Sin(i) * 10 + 3);
+
+
+                    await _stockChart.DrawAsync(data);
+                    await _stockChart2.DrawAsync(dataOfChart2);
+                    await Task.Delay(2000);
+
+                }
+            }
+            catch (Exception e)
+            {
+
+                Console.WriteLine(e);
+                throw;
+            }
+
+           
+        }, TaskCreationOptions.LongRunning);
+    }
+}
