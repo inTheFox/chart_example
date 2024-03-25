@@ -2,6 +2,7 @@
 @using StokChart.Blazor.Core.Interfaces
 @using StokChart.Blazor.Core.Enums
 @using StokChart.Blazor.Core.Implementations
+@using StokChart.Blazor.Core.Indicators
 @using StokChart.Blazor.Core.Models
 
 @implements IDisposable
@@ -34,6 +35,7 @@
                         
                         <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="RemoveAreaButtonCallback">Remove active area</MudButton>
                         
+                        <MudText Class="mt-2">Axis manage</MudText>
                         <MudGrid Class="mt-1" Justify="Justify.Center" Spacing="1">
                             <MudItem md="6">
                                 <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddAxisXButtonCallback">Add axis X</MudButton>
@@ -49,11 +51,40 @@
                             </MudItem>
                         </MudGrid>
                         
-                        <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddCandlesToAreaCallback">Add candles to active area</MudButton>
-                        <MudButton Class="mt-1" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddTrades">Add trades to active area</MudButton>
-                        <MudButton Class="mt-1" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddOrders">Add orders to active area</MudButton>
+                        <MudText Class="mt-2">Series manage</MudText>
+                        <!-- Add/Remove candles -->
+                        <MudGrid Spacing="1" Class="mt-2">
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddCandlesToAreaCallback">Add candles</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="RemoveCandles">Remove candles</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                        
+                        <!-- Add/Remove trades -->
+                        <MudGrid Spacing="1" Class="mt-2">
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddTrades">Add trades</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="RemoveTrades">Remove trades</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                        
+                        <!-- Add/Remove orders -->
+                        <MudGrid Spacing="1" Class="mt-2">
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddOrders">Add orders</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="RemoveOrders">Remove orders</MudButton>
+                            </MudItem>
+                        </MudGrid>
+
 
                         <MudGrid Spacing="1" Class="mt-2">
+                            <!-- Add trade buy/sell -->
                             <MudItem md="6">
                                 <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddBuyTradeCallback">Trade-buy</MudButton>
                             </MudItem>
@@ -61,6 +92,7 @@
                                 <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="AddSellTradeCallback">Trade-sell</MudButton>
                             </MudItem>
                             
+                            <!-- Add order buy/sell -->
                             <MudItem md="6">
                                 <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddBuyOrderCallback">Order-buy</MudButton>
                             </MudItem>
@@ -68,6 +100,28 @@
                                 <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="AddSellOrderCallback">Order-sell</MudButton>
                             </MudItem>
                         </MudGrid>
+                        
+                        <!-- Add/Remove simple line indicator -->
+                        <MudGrid Spacing="1" Class="mt-2">
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddLineIndicatorCallback">Add simple line indicator</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="RemoveLineIndicatorCallback">Remove simple line indicator</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                        
+                        <!-- Add/Remove bubble indicator -->
+                        <MudGrid Spacing="1" Class="mt-2">
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddBubbleIndicatorCallback">Add bubble indicator</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="RemoveBubbleIndicatorCallback">Remove bubble indicator</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                        
+
                     </MudPaper>
                 </MudItem>
                 <MudItem sm="3">
@@ -120,6 +174,7 @@
     private readonly List<IChartCandleElement> _candleElements = new();
     private readonly List<IChartTradeElement> _tradeElements = new();
     private readonly List<IChartOrderElement> _orderElements = new();
+    private readonly List<IChartIndicatorElement> _indicatorElements = new();
 
     private ExampleOrder? _order;
     private ExampleTrade? _trade;
@@ -132,11 +187,24 @@
 
         _chart.AreaAdded += (area) =>
         {
-            ToastService.ShowSuccess("Область добавлена");
+            ToastService.ShowSuccess($"AreaId: {area.Id}: area added");
         };
         _chart.AreaRemoved += (area) =>
         {
-            ToastService.ShowError("Область удалена");
+            ToastService.ShowSuccess($"AreaId: {area.Id}: area removed");
+        };
+        _chart.ElementAdded += (area, element) =>
+        {
+            ToastService.ShowSuccess($"AreaId: {area.Id}, ElementId: {element.Id}: element added");
+        };
+        _chart.ElementRemoved += (area, element) =>
+        {
+            _candleElements.RemoveAll(p => p.Id == element.Id);
+            _tradeElements.RemoveAll(p => p.Id == element.Id);
+            _orderElements.RemoveAll(p => p.Id == element.Id);
+            _indicatorElements.RemoveAll(p => p.Id == element.Id);
+
+            ToastService.ShowSuccess($"AreaId: {area.Id}, ElementId: {element.Id}: element removed +");
         };
 
         _updateTask = Task.Factory.StartNew(async () =>
@@ -159,8 +227,6 @@
 
     private async Task OnUpdate()
     {
-        if (_candleElements.Count <= 0) return;
-
         if (_updateItterator + 1 >= _openValues.Count)
         {
             _updateItterator = 0;
@@ -180,41 +246,58 @@
             item.Add(candleElement, new CandleMessage(openValue, highValue, lowValue, closeValue, volume));
         }
 
-        if (_order != null)
+        foreach (var indicatorElement in _indicatorElements)
         {
-            foreach (var orderElement in _orderElements)
+            if (indicatorElement.Indicator is BubbleIndicator)
             {
-                _order.X = item.DateOffset;
-
-                if (_order.Side == Sides.Buy)
-                {
-                    _order.Y = lowValue;
-                }
-                else
-                {
-                    _order.Y = highValue;
-                }
-                item.Add(orderElement, _order);
+                item.Add(indicatorElement, lowValue, Math.Sin(_updateItterator) * 60);
+                continue;
             }
-            _order = null;
+            if (indicatorElement.Indicator is SimpleLineIndicator)
+            {
+                item.Add(indicatorElement, lowValue);
+                continue;
+            }
         }
-        if (_trade != null)
-        {
-            foreach (var tradeElement in _tradeElements)
-            {
-                _trade.X = item.DateOffset;
 
-                if (_trade.Side == Sides.Buy)
+        if (_candleElements.Count > 0)
+        {
+            if (_order != null)
+            {
+                foreach (var orderElement in _orderElements)
                 {
-                    _trade.Y = lowValue;
+                    _order.X = item.DateOffset;
+
+                    if (_order.Side == Sides.Buy)
+                    {
+                        _order.Y = lowValue;
+                    }
+                    else
+                    {
+                        _order.Y = highValue;
+                    }
+                    item.Add(orderElement, _order);
                 }
-                else
-                {
-                    _trade.Y = highValue;
-                }
-                item.Add(tradeElement, _trade);
+                _order = null;
             }
-            _trade = null;
+            if (_trade != null)
+            {
+                foreach (var tradeElement in _tradeElements)
+                {
+                    _trade.X = item.DateOffset;
+
+                    if (_trade.Side == Sides.Buy)
+                    {
+                        _trade.Y = lowValue;
+                    }
+                    else
+                    {
+                        _trade.Y = highValue;
+                    }
+                    item.Add(tradeElement, _trade);
+                }
+                _trade = null;
+            }
         }
         await _chart.DrawAsync(data);
 
@@ -311,6 +394,16 @@
         _candleElements.Add(candleItem);
     }
 
+    private async Task RemoveCandles()
+    {
+        if (_activeArea == null) return;
+
+        var candleItem = _candleElements.FirstOrDefault(p => p.ChartArea.Id == _activeArea.Id);
+        if (candleItem == null) return;
+
+        await _activeArea.RemoveElementAsync(candleItem);
+    }
+
     private async Task AddTrades()
     {
         if (_activeArea == null) return;
@@ -329,6 +422,17 @@
         _tradeElements.Add(tradeElement);
     }
 
+    private async Task RemoveTrades()
+    {
+        if (_activeArea == null) return;
+
+        var tradeItem = _tradeElements.FirstOrDefault(p => p.ChartArea.Id == _activeArea.Id);
+        if (tradeItem == null) return;
+
+        _trade = null;
+        await _activeArea.RemoveElementAsync(tradeItem);
+    }
+
     private async Task AddOrders()
     {
         if (_activeArea == null) return;
@@ -345,6 +449,17 @@
         orderElement.SellColor = System.Drawing.Color.DeepSkyBlue;
         orderElement.SellStrokeColor = System.Drawing.Color.Blue;
         _orderElements.Add(orderElement);
+    }
+
+    private async Task RemoveOrders()
+    {
+        if (_activeArea == null) return;
+
+        var orderItem = _orderElements.FirstOrDefault(p => p.ChartArea.Id == _activeArea.Id);
+        if (orderItem == null) return;
+
+        _order = null;
+        await _activeArea.RemoveElementAsync(orderItem);
     }
 
     private async Task AddBuyTradeCallback()
@@ -397,6 +512,45 @@
             Sides.Sell,
             500, 500
         );
+    }
+
+    public async Task AddLineIndicatorCallback()
+    {
+        if (_activeArea == null) return;
+        var lineIndicator = await _activeArea.AddIndicatorAsync(new SimpleLineIndicator("Line", 1));
+        lineIndicator.StrokeThickness = 2;
+        lineIndicator.Color = System.Drawing.Color.Blue;
+        _indicatorElements.Add(lineIndicator);
+    }
+
+    public async Task RemoveLineIndicatorCallback()
+    {
+        if (_activeArea == null) return;
+
+        var indicatorElement = _indicatorElements.FirstOrDefault(p => p.Indicator is SimpleLineIndicator);
+        if (indicatorElement == null) return;
+
+        await indicatorElement.RemoveAsync();
+    }
+
+    public async Task AddBubbleIndicatorCallback()
+    {
+        if (_activeArea == null) return;
+
+        var bubbleIndicator = await _activeArea.AddIndicatorAsync(new BubbleIndicator("bubble"));
+        bubbleIndicator.StrokeThickness = 2;
+        bubbleIndicator.Color = System.Drawing.Color.FromArgb(100, System.Drawing.Color.Red);
+        _indicatorElements.Add(bubbleIndicator);
+    }
+
+    public async Task RemoveBubbleIndicatorCallback()
+    {
+        if (_activeArea == null) return;
+
+        var indicatorElement = _indicatorElements.FirstOrDefault(p => p.Indicator is BubbleIndicator);
+        if (indicatorElement == null) return;
+
+        await indicatorElement.RemoveAsync();
     }
 
     public void Dispose()
