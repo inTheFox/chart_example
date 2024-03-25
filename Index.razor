@@ -1,48 +1,97 @@
-﻿@page "/"
+@page "/"
+@using StokChart.Blazor.Core.Interfaces
 @using StokChart.Blazor.Core.Enums
 @using StokChart.Blazor.Core.Implementations
-@using StokChart.Blazor.Core.Indicators
-@using StokChart.Blazor.Core.Interfaces
+@using StokChart.Blazor.Core.Models
+
+@implements IDisposable
+@inject IToastService ToastService
 
 <MudContainer MaxWidth="MaxWidth.Large">
     <MudPaper Elevation="15" Class="mt-2">
         <MudToolBar>
             <MudText Typo="Typo.h6">StockChart</MudText>
-            <MudSpacer/>
+            <MudSpacer />
             <MudMenu Icon="@Icons.Material.Filled.MoreVert" AnchorOrigin="Origin.BottomCenter">
             </MudMenu>
         </MudToolBar>
         <MudPaper Class="p-1">
             <MudGrid Spacing="0">
                 <MudItem sm="9">
-                    <MudText>Simple chart. Candles only</MudText>
-                    <StockChart @ref="_stockChart2" />   
+                    <StockChart @ref="_chart" />
                     
-                    <MudText Class="mt-2">Candles, trades, indicators.</MudText>
-                    <StockChart @ref="_stockChart" />
+                    <MudPaper Class="mt-2 p-3">
+                        <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddAreaButtonCallback">Add new area</MudButton>
+
+                        <MudSelect Variant="Variant.Filled" Class="mt-2 mb-1" T="IChartArea" Label="Active area" @bind-Value="_activeArea">
+                            @{
+                                foreach (var area in _areas)
+                                {
+                                    <MudSelectItem Value="@area">@area.Id</MudSelectItem>
+                                }
+                            }
+                        </MudSelect>
+                        
+                        <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="RemoveAreaButtonCallback">Remove active area</MudButton>
+                        
+                        <MudGrid Class="mt-1" Justify="Justify.Center" Spacing="1">
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddAxisXButtonCallback">Add axis X</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="RemoveAxisXButtonCallback">Remove axis X</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddAxisYButtonCallback">Add axis Y</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="RemoveAxisYButtonCallback">Remove axis Y</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                        
+                        <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddCandlesToAreaCallback">Add candles to active area</MudButton>
+                        <MudButton Class="mt-1" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddTrades">Add trades to active area</MudButton>
+                        <MudButton Class="mt-1" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddOrders">Add orders to active area</MudButton>
+
+                        <MudGrid Spacing="1" Class="mt-2">
+                            <MudItem md="6">
+                                <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddBuyTradeCallback">Trade-buy</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="AddSellTradeCallback">Trade-sell</MudButton>
+                            </MudItem>
+                            
+                            <MudItem md="6">
+                                <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Success" OnClick="AddBuyOrderCallback">Order-buy</MudButton>
+                            </MudItem>
+                            <MudItem md="6">
+                                <MudButton Class="mt-2" FullWidth="true" Variant="Variant.Filled" Color="Color.Error" OnClick="AddSellOrderCallback">Order-sell</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
                 </MudItem>
                 <MudItem sm="3">
                     <MudNavMenu Rounded="true" Margin="Margin.Dense" Color="Color.Primary" Class="pa-2">
                         <MudPaper Elevation="5" Class="p-1 mb-1">
-                            <MudCheckBox T="bool" @bind-Value="@_stockChart.CrossHair" Label="CrossHair"></MudCheckBox>
+                            <MudCheckBox T="bool" @bind-Value="@_chart.CrossHair" Label="CrossHair"></MudCheckBox>
                         </MudPaper>
                         <MudPaper Elevation="5" Class="p-1 mb-1">
-                            <MudCheckBox T="bool" @bind-Value="@_stockChart.CrossHairTooltip"  Label="CrossHairTooltip"></MudCheckBox>
+                            <MudCheckBox T="bool" @bind-Value="@_chart.CrossHairTooltip" Label="CrossHairTooltip"></MudCheckBox>
                         </MudPaper>
                         <MudPaper Elevation="5" Class="p-1 mb-1">
-                            <MudCheckBox T="bool" @bind-Value="@_stockChart.CrossHairAxisLabels" Label="CrossHairAxisLabels"></MudCheckBox>
+                            <MudCheckBox T="bool" @bind-Value="@_chart.CrossHairAxisLabels" Label="CrossHairAxisLabels"></MudCheckBox>
                         </MudPaper>
                         <MudPaper Elevation="5" Class="p-1 mb-1">
-                            <MudCheckBox T="bool" @bind-Value="@_stockChart.IsAutoScroll"  Label="IsAutoScroll"></MudCheckBox>
+                            <MudCheckBox T="bool" @bind-Value="@_chart.IsAutoScroll" Label="IsAutoScroll"></MudCheckBox>
                         </MudPaper>
                         <MudPaper Elevation="5" Class="p-1 mb-1">
-                            <MudCheckBox T="bool" @bind-Value="@_stockChart.IsAutoRange" Label="IsAutoRange"></MudCheckBox>
+                            <MudCheckBox T="bool" @bind-Value="@_chart.IsAutoRange" Label="IsAutoRange"></MudCheckBox>
                         </MudPaper>
                         <MudPaper Elevation="5" Class="p-1 mb-1">
-                            <MudCheckBox T="bool" @bind-Value="@_stockChart.ShowLegend" Label="ShowLegend"></MudCheckBox>
+                            <MudCheckBox T="bool" @bind-Value="@_chart.ShowLegend" Label="ShowLegend"></MudCheckBox>
                         </MudPaper>
                         <MudPaper Elevation="5" Class="p-1 mb-1">
-                            <MudCheckBox T="bool" @bind-Value="@_stockChart.ShowOverview" Label="ShowOverview"></MudCheckBox>
+                            <MudCheckBox T="bool" @bind-Value="@_chart.ShowOverview" Label="ShowOverview"></MudCheckBox>
                         </MudPaper>
                     </MudNavMenu>
                 </MudItem>
@@ -52,118 +101,307 @@
     </MudPaper>
 </MudContainer>
 
-@code
-{
-    #pragma warning disable CS4014
-    private StockChart? _stockChart;
-    private StockChart? _stockChart2;
+@code {
+    private IChart _chart;
 
-    private IChartCandleElement? _chartCandlesElement;
-    private IChartCandleElement? _chartCandlesElement2;
+    private readonly List<IChartArea> _areas = new();
+    private IChartArea? _activeArea;
 
-    private IChartTradeElement? _chartTradesElem;
-    private IChartOrderElement? _chartOrdersElem;
+    private const int UpdateDelay = 1000;
+    private Task? _updateTask;
 
-    private IChartIndicatorElement? _lineIndicatorElement;
-    private IChartIndicatorElement? _lineIndicatorElement2;
+    private int _updateItterator = 0;
+    private readonly List<double> _openValues = new(PaneTestData.OpenValues.OfType<double>());
+    private readonly List<double> _highValues = new(PaneTestData.HighValues.OfType<double>());
+    private readonly List<double> _lowValues = new(PaneTestData.LowValues.OfType<double>());
+    private readonly List<double> _closeValues = new(PaneTestData.CloseValues.OfType<double>());
+    private readonly List<double> _volumeValues = new(PaneTestData.VolumeValues.OfType<double>());
+    
+    private readonly List<IChartCandleElement> _candleElements = new();
+    private readonly List<IChartTradeElement> _tradeElements = new();
+    private readonly List<IChartOrderElement> _orderElements = new();
 
-    private IChartIndicatorElement? _bubbleIndicator;
-    private IChartIndicatorElement? _histogramIndicator;
-    private IChartIndicatorElement? _hardHistogramIndicator;
-    private IChartIndicatorElement? _stripeIndicator;
+    private ExampleOrder? _order;
+    private ExampleTrade? _trade;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        if (_stockChart is null) return;
-        if (_stockChart2 is null) return;
+        await _chart.InitChartAsync();
+        await AddAreaButtonCallback();
 
-        await _stockChart.InitChartAsync();
+        _chart.AreaAdded += (area) =>
+        {
+            ToastService.ShowSuccess("Область добавлена");
+        };
+        _chart.AreaRemoved += (area) =>
+        {
+            ToastService.ShowError("Область удалена");
+        };
 
-        var area = await _stockChart.CreateAreaAsync();
-        await area.AddXAxis(ChartAxisType.CategoryDateTime);
-        await area.AddYAxis(ChartAxisType.Numeric);
-        await area.InitModifers();
-
-        var area2 = await _stockChart.CreateAreaAsync();
-        await area2.AddXAxis(ChartAxisType.CategoryDateTime);
-        await area2.AddYAxis(ChartAxisType.Numeric);
-        await area2.InitModifers();
-
-        await _stockChart2.InitChartAsync();
-        var areaOfChart2 = await _stockChart2.CreateAreaAsync();
-        await areaOfChart2.AddXAxis(ChartAxisType.CategoryDateTime);
-        await areaOfChart2.AddYAxis(ChartAxisType.Numeric);
-        await areaOfChart2.InitModifers();
-
-        _chartCandlesElement = await area.AddCandlesAsync();
-        _chartCandlesElement.UpFillColor = System.Drawing.Color.Blue;
-        _chartCandlesElement.UpBorderColor = System.Drawing.Color.Blue;
-        _chartCandlesElement.DownFillColor = System.Drawing.Color.White;
-        _chartCandlesElement.DownBorderColor = System.Drawing.Color.White;
-
-        _chartCandlesElement2 = await areaOfChart2.AddCandlesAsync();
-        _chartCandlesElement2.UpFillColor = System.Drawing.Color.GreenYellow;
-        _chartCandlesElement2.UpBorderColor = System.Drawing.Color.Green;
-        _chartCandlesElement2.DownFillColor = System.Drawing.Color.IndianRed;
-        _chartCandlesElement2.DownBorderColor = System.Drawing.Color.DarkRed;
-
-
-        _lineIndicatorElement = await area.AddIndicatorAsync(new SimpleLineIndicator("Test", 2));
-        _bubbleIndicator = await area.AddIndicatorAsync(new BubbleIndicator("Bubble test"));
-        _hardHistogramIndicator = await area2.AddIndicatorAsync(new HardHistogramIndicator("Гистограмма (сложн)"));
-
-        Task.Factory.StartNew(async () =>
+        _updateTask = Task.Factory.StartNew(async () =>
         {
             try
             {
-                List<double> openValues = new List<double>(PaneTestData.OpenValues.OfType<double>());
-                List<double> highValues = new List<double>(PaneTestData.HighValues.OfType<double>());
-                List<double> lowValues = new List<double>(PaneTestData.LowValues.OfType<double>());
-                List<double> closeValues = new List<double>(PaneTestData.CloseValues.OfType<double>());
-                List<double> volumeValues = new List<double>(PaneTestData.VolumeValues.OfType<double>());
-                Console.WriteLine($"Open: {openValues.Count}, High: {highValues.Count}, Low: {lowValues.Count}, Close: {closeValues.Count}");
-
-                int firstCounter = 0;
-                for (int i = 0; i < openValues.Count; i++)
+                while (true)
                 {
-                    var data = _stockChart.CreateData();
-                    var item = data.Group(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000);
-
-                    var dataOfChart2 = _stockChart2.CreateData();
-                    var itemOfChart2 = dataOfChart2.Group(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000);
-
-                    decimal openValue = new decimal(openValues[i]);
-                    decimal highValue = new decimal(highValues[i]);
-                    decimal lowValue = new decimal(lowValues[i]);
-                    decimal closeValue = new decimal(closeValues[i]);
-                    decimal volume = new decimal(volumeValues[i]);
-
-                    // Добавляем свечную серию
-                    item.Add(_chartCandlesElement, new CandleMessage(openValue, highValue, lowValue, closeValue, volume));
-                    itemOfChart2.Add(_chartCandlesElement2, new CandleMessage(openValue, highValue, lowValue, closeValue, volume));
-                    
-                    item.Add(_lineIndicatorElement, openValue, closeValue);
-                    //item.Add(_lineIndicatorElement2, openValue, highValue, lowValue, closeValue);
-
-                    //item.Add(_bubbleIndicator, openValue, Math.Sin(i) * 60 + 3);
-                    item.Add(_hardHistogramIndicator, Math.Sin(i) * 10 + 3);
-
-
-                    await _stockChart.DrawAsync(data);
-                    await _stockChart2.DrawAsync(dataOfChart2);
-                    await Task.Delay(2000);
-
+                    await OnUpdate();
+                    await Task.Delay(UpdateDelay);
                 }
             }
             catch (Exception e)
             {
-
                 Console.WriteLine(e);
-                throw;
             }
-
-           
         }, TaskCreationOptions.LongRunning);
+        return;
     }
+
+    private async Task OnUpdate()
+    {
+        if (_candleElements.Count <= 0) return;
+
+        if (_updateItterator + 1 >= _openValues.Count)
+        {
+            _updateItterator = 0;
+        }
+
+        var data = _chart.CreateData();
+        var item = data.Group(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000);
+
+        decimal openValue = new decimal(_openValues[_updateItterator]);
+        decimal highValue = new decimal(_highValues[_updateItterator]);
+        decimal lowValue = new decimal(_lowValues[_updateItterator]);
+        decimal closeValue = new decimal(_closeValues[_updateItterator]);
+        decimal volume = new decimal(_volumeValues[_updateItterator]);
+
+        foreach (var candleElement in _candleElements)
+        {
+            item.Add(candleElement, new CandleMessage(openValue, highValue, lowValue, closeValue, volume));
+        }
+
+        if (_order != null)
+        {
+            foreach (var orderElement in _orderElements)
+            {
+                _order.X = item.DateOffset;
+
+                if (_order.Side == Sides.Buy)
+                {
+                    _order.Y = lowValue;
+                }
+                else
+                {
+                    _order.Y = highValue;
+                }
+                item.Add(orderElement, _order);
+            }
+            _order = null;
+        }
+        if (_trade != null)
+        {
+            foreach (var tradeElement in _tradeElements)
+            {
+                _trade.X = item.DateOffset;
+
+                if (_trade.Side == Sides.Buy)
+                {
+                    _trade.Y = lowValue;
+                }
+                else
+                {
+                    _trade.Y = highValue;
+                }
+                item.Add(tradeElement, _trade);
+            }
+            _trade = null;
+        }
+        await _chart.DrawAsync(data);
+
+        _updateItterator++;
+    }
+
+    private async Task AddAreaButtonCallback()
+    {
+        var area = await _chart.CreateAreaAsync();
+        await area.AddXAxis(ChartAxisType.CategoryDateTime);
+        await area.AddYAxis(ChartAxisType.Numeric);
+        await area.InitModifers();
+
+        _areas.Add(area);
+        _activeArea = area;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RemoveAreaButtonCallback()
+    {
+        if (_activeArea == null) return;
+        if (_areas.Count <= 1)
+        {
+            ToastService.ShowError("Нельзя удалить область по умолчанию");
+            return;
+        }
+
+        await _chart.RemoveAreaAsync(_activeArea);
+
+        _areas.RemoveAll(p => p.Id == _activeArea.Id);
+        _activeArea = _areas.LastOrDefault();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AddAxisXButtonCallback()
+    {
+        if (_activeArea == null) return;
+        await _activeArea.AddXAxis(ChartAxisType.CategoryDateTime);
+    }
+
+
+    private async Task AddAxisYButtonCallback()
+    {
+        if (_activeArea == null) return;
+        await _activeArea.AddYAxis(ChartAxisType.Numeric);
+    }
+
+    private async Task RemoveAxisXButtonCallback()
+    {
+        if (_activeArea == null) return;
+        if (_activeArea.XAxises.Count <= 1)
+        {
+            ToastService.ShowError("Нельзя удалить ось по умолчанию");
+            return;
+        }
+
+        var axis = _activeArea.XAxises.LastOrDefault();
+        if (axis == null) return;
+
+        await _chart.RemoveAxisAsync(axis);
+    }
+
+    private async Task RemoveAxisYButtonCallback()
+    {
+        if (_activeArea == null) return;
+        if (_activeArea.YAxises.Count <= 1)
+        {
+            ToastService.ShowError("Нельзя удалить ось по умолчанию");
+            return;
+        }
+
+        var axis = _activeArea.YAxises.LastOrDefault();
+        if (axis == null) return;
+
+        await _chart.RemoveAxisAsync(axis);
+    }
+
+    private async Task AddCandlesToAreaCallback()
+    {
+        if (_activeArea == null) return;
+
+        if (_candleElements.FirstOrDefault(p => p.ChartArea.Id == _activeArea.Id) != null)
+        {
+            ToastService.ShowError("На этой области уже есть свечная серия.");
+            return;
+        }
+
+        var candleItem = await _activeArea.AddCandlesAsync();
+        candleItem.UpFillColor = System.Drawing.Color.GreenYellow;
+        candleItem.UpBorderColor = System.Drawing.Color.Green;
+        candleItem.DownFillColor = System.Drawing.Color.IndianRed;
+        candleItem.DownBorderColor = System.Drawing.Color.DarkRed;
+        _candleElements.Add(candleItem);
+    }
+
+    private async Task AddTrades()
+    {
+        if (_activeArea == null) return;
+
+        if (_tradeElements.FirstOrDefault(p => p.ChartArea.Id == _activeArea.Id) != null)
+        {
+            ToastService.ShowError("На этой области уже есть такая серия");
+            return;
+        }
+
+        var tradeElement = await _activeArea.AddTradesAsync();
+        tradeElement.BuyColor = System.Drawing.Color.LightGreen;
+        tradeElement.BuyStrokeColor = System.Drawing.Color.Green;
+        tradeElement.SellColor = System.Drawing.Color.IndianRed;
+        tradeElement.SellStrokeColor = System.Drawing.Color.Red;
+        _tradeElements.Add(tradeElement);
+    }
+
+    private async Task AddOrders()
+    {
+        if (_activeArea == null) return;
+
+        if (_orderElements.FirstOrDefault(p => p.ChartArea.Id == _activeArea.Id) != null)
+        {
+            ToastService.ShowError("На этой области уже есть такая серия");
+            return;
+        }
+
+        var orderElement = await _activeArea.AddOrdersAsync();
+        orderElement.BuyColor = System.Drawing.Color.YellowGreen;
+        orderElement.BuyStrokeColor = System.Drawing.Color.Yellow;
+        orderElement.SellColor = System.Drawing.Color.DeepSkyBlue;
+        orderElement.SellStrokeColor = System.Drawing.Color.Blue;
+        _orderElements.Add(orderElement);
+    }
+
+    private async Task AddBuyTradeCallback()
+    {
+        if (_trade != null) return;
+
+        _trade = new ExampleTrade(
+            0,
+            0,
+            0,
+            Sides.Buy,
+            500, 500
+        );
+    }
+
+    private async Task AddSellTradeCallback()
+    {
+        if (_trade != null) return;
+
+        _trade = new ExampleTrade(
+            0,
+            0,
+            0,
+            Sides.Sell,
+            500, 500
+        );
+    }
+
+    private async Task AddBuyOrderCallback()
+    {
+        if (_order != null) return;
+
+        _order = new ExampleOrder(
+            0,
+            0,
+            0,
+            Sides.Buy,
+            500, 500
+        );
+    }
+
+    private async Task AddSellOrderCallback()
+    {
+        if (_order != null) return;
+
+        _order = new ExampleOrder(
+            0,
+            0,
+            0,
+            Sides.Sell,
+            500, 500
+        );
+    }
+
+    public void Dispose()
+    {
+        _updateTask?.Dispose();
+    }
+
 }
